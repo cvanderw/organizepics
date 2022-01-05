@@ -25,6 +25,9 @@ func usage() {
 	fmt.Fprintf(os.Stderr, "  %s [path to picture directory]\n", os.Args[0])
 }
 
+// TODO: Consider pulling a lot of this out into a Go library (which can be
+// separately tested).
+
 // MediaFileMatcher represents an element capable of parsing date information
 // for a given file name. Each MediaFileMatcher is specifically intended to
 // handle certain file types and is capable of parsing date information from
@@ -68,7 +71,7 @@ var mediaMatchers = []*MediaFileMatcher{
 		// Intended to match files of format
 		//  - IMG_YYYYMMDD_NUMBER.jpg
 		//  - VID_YYYYMMDD_NUMBER.mp4
-		//  - PX_YYYYMMDD_NUMBER.{jpg,mp4}
+		//  - PXL_YYYYMMDD_NUMBER.{jpg,mp4}
 		supportedRegexps: []*regexp.Regexp{
 			regexp.MustCompile(`IMG_\d{8}_.+jpg$`),
 			regexp.MustCompile(`VID_\d{8}_.+mp4$`),
