@@ -57,10 +57,11 @@ func (m *MediaFileMatcher) MatchFileName(s string) bool {
 // provide meaningful results.
 //
 // Suggested usage pattern:
-//   if (matcher.MatchFileName(s)) {
-//     formattedDate := matcher.ParseFormattedDate(s)
-//     // Do somethign with `formattedDate`.
-//   }
+//
+//	if (matcher.MatchFileName(s)) {
+//	  formattedDate := matcher.ParseFormattedDate(s)
+//	  // Do something with `formattedDate`.
+//	}
 func (m *MediaFileMatcher) ParseFormattedDate(s string) string {
 	year, month, day := m.parseDate(s)
 	return fmt.Sprintf("%s-%s-%s", year, month, day)
@@ -89,7 +90,7 @@ var mediaMatchers = []*MediaFileMatcher{
 	{
 		// Intended to match C360_YYYY-MM-DD-hh-mm-ss-mmm.jpg.
 		supportedRegexps: []*regexp.Regexp{
-			regexp.MustCompile(`C360_\d{4}-\d\d-\d\d-\d\d-\d\d-\d\d-\d{3}\.jpg`),
+			regexp.MustCompile(`^C360_\d{4}-\d\d-\d\d-\d\d-\d\d-\d\d-\d{3}\.jpg`),
 		},
 		parseDate: func(s string) (year, month, day string) {
 			date := strings.Split(s, "_")[1]
@@ -105,11 +106,25 @@ var mediaMatchers = []*MediaFileMatcher{
 		//	- YYYYMMDD_NUMBER.jpg
 		//	- YYYYMMDD_NUMBER.mp4
 		supportedRegexps: []*regexp.Regexp{
-			regexp.MustCompile(`\d{8}_.+jpg$`),
-			regexp.MustCompile(`\d{8}_.+mp4$`),
+			regexp.MustCompile(`^\d{8}_.+jpg$`),
+			regexp.MustCompile(`^\d{8}_.+mp4$`),
 		},
 		parseDate: func(s string) (year, month, day string) {
 			date := strings.Split(s, "_")[0]
+			year = date[:4]
+			month = date[4:6]
+			day = date[6:]
+			return
+		},
+	},
+	{
+		// Intended to match files of format
+		//	- Screenshot_YYYYMMDD_*.jpg
+		supportedRegexps: []*regexp.Regexp{
+			regexp.MustCompile(`^Screenshot_\d{8}_.+jpg$`),
+		},
+		parseDate: func(s string) (year, month, day string) {
+			date := strings.Split(s, "_")[1]
 			year = date[:4]
 			month = date[4:6]
 			day = date[6:]
