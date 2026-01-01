@@ -12,12 +12,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
+
+	"github.com/rwcarlsen/goexif/exif"
 )
 
 func usage() {
@@ -135,11 +137,11 @@ var mediaMatchers = []*MediaFileMatcher{
 
 // organizePics accepts a directory name and organizes all recognized files
 // (images, videos) into appropriate directories.
-// TODO: Consider accepting a slice of os.FileInfo to reduce dependency on file
+// TODO: Consider accepting a slice of os.DirEntry to reduce dependency on file
 // system and make it easier to test (although that might not be entirely
 // easy).
 func organizePics(dirName string) {
-	files, err := ioutil.ReadDir(dirName)
+	files, err := os.ReadDir(dirName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -147,7 +149,7 @@ func organizePics(dirName string) {
 		if !file.IsDir() {
 			fileName := file.Name()
 
-			destDirName, err := getFolderName(fileName)
+			destDirName, err := getFolderName(dirName, fileName)
 			if err != nil {
 				log.Print(err)
 				continue
@@ -178,10 +180,34 @@ func organizePics(dirName string) {
 	}
 }
 
-// getFolderName accepts a file name and returns name that would be appropriate
-// to store that given file. If no such folder name can be determined then this
+// getFolderName accepts a directory name and file name and returns name that would be
+// appropriate to store that given file. If no such folder name can be determined then this
 // function returns a non-nil error.
-func getFolderName(fileName string) (string, error) {
+func getFolderName(dirName, fileName string) (string, error) {
+	path := filepath.Join(dirName, fileName)
+	f, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	x, err := exif.Decode(f)
+	if err != nil {
+		// TODO: Note that for some file types (like mp4) this isn't going to work. See if there are other
+		// libraries available to read datetime from those files.
+		log.Printf("unable to read exif data from file '%q': %v; using file name pattern instead", path, err)
+		return parseDateFromFileName(fileName)
+	}
+	// Attempt to read the creation time from the file.
+	t, err := x.DateTime()
+	if err != nil {
+		log.Printf("unable to read DateTime from exif data in file '%q': %v; using file name pattern instead", path, err)
+		return parseDateFromFileName(fileName)
+	}
+	return t.Format(time.DateOnly), nil
+}
+
+// parseDateFromFileName accepts a file name and attempts to return a string (in YYYY-MM-DD format)
+// using a pattern in the provided file name to generate the date format.
+func parseDateFromFileName(fileName string) (string, error) {
 	for _, matcher := range mediaMatchers {
 		if matcher.MatchFileName(fileName) {
 			return matcher.ParseFormattedDate(fileName), nil
