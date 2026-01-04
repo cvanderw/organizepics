@@ -189,6 +189,8 @@ func getFolderName(dirName, fileName string) (string, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer f.Close()
+
 	x, err := exif.Decode(f)
 	if err != nil {
 		// TODO: Note that for some file types (like mp4) this isn't going to work. See if there are other
